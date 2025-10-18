@@ -8,10 +8,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- Chosen Palette: Warm Neutrals -->
-    <!-- Application Structure Plan: A two-column "Character Dossier & Scene Breakdown" layout. The left column presents the story for linear reading. The right, sticky column acts as an interactive dossier. Clicking highlighted character names in the story dynamically updates the dossier with their profiles and abilities mentioned in the text. This structure was chosen to enhance a narrative experience, allowing users to get contextual information without interrupting their reading flow, thus making the "report" (story) more explorable and understandable. -->
-    <!-- Visualization & Content Choices: Story Text -> Goal: Inform -> Presentation: Formatted HTML -> Interaction: Clickable character names to trigger JS updates. | Character Profiles -> Goal: Organize/Inform -> Presentation: Dynamic HTML panel (Dossier) -> Interaction: Content is updated based on user clicks in the main story -> Justification: Provides non-linear access to key information (characters) within a linear narrative, enhancing comprehension. | Character Icons -> Goal: Visual Aid -> Presentation: Unicode Characters/HTML+CSS -> Interaction: None -> Justification: Simple, no-image visual representation. Library/Method: Vanilla JS for all interactions. -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -34,6 +30,9 @@
         .theme-button:hover {
             transform: scale(1.1);
         }
+        .menu-link {
+            @apply block p-4 text-xl font-medium rounded-lg shadow-md cursor-pointer transition duration-300;
+        }
     </style>
 </head>
 <body class="antialiased bg-stone-100 text-stone-800">
@@ -42,12 +41,30 @@
         <header class="text-center mb-12 relative">
             <h1 class="text-4xl md:text-5xl font-bold">A Meeting of Assassins</h1>
             <p class="mt-2">An Interactive Dossier</p>
+            <button id="menu-toggle" class="absolute top-0 left-0 p-2 rounded-full bg-stone-200 text-stone-600 theme-button">
+                <span id="menu-icon">☰</span>
+            </button>
             <button id="theme-toggle" class="absolute top-0 right-0 p-2 rounded-full bg-stone-200 text-stone-600 theme-button">
                 <span id="theme-icon">🌙</span>
             </button>
         </header>
+        
+        <div id="menu-container" class="hidden flex justify-center items-start min-h-[60vh]">
+            <div class="w-full max-w-lg p-6 bg-white rounded-lg shadow-xl space-y-4">
+                <h2 class="text-3xl font-bold mb-6 text-center">Main Menu</h2>
+                
+                <div id="story-selection-link" class="menu-link bg-amber-100 text-amber-800 hover:bg-amber-200" data-view="story">
+                    1. Story Selection (Chapter 1)
+                </div>
 
-        <main class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                <div id="settings-link" class="menu-link bg-stone-200 text-stone-800 hover:bg-stone-300" data-view="settings">
+                    2. Settings
+                </div>
+                
+            </div>
+        </div>
+
+        <main id="main-story-view" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
             
             <article class="md:col-span-2 lg:col-span-3 prose lg:prose-lg max-w-none space-y-6">
                 <div class="main-content-box bg-white p-6 rounded-lg shadow">
@@ -173,38 +190,94 @@
             updateDossier('toji');
         }
 
+        /* --- Theme Toggle Logic --- */
         const themeToggle = document.getElementById('theme-toggle');
         const themeIcon = document.getElementById('theme-icon');
         const body = document.body;
         const mainContentBox = document.querySelector('.main-content-box');
         const dossierPanelDiv = document.getElementById('dossier-panel');
         const dossierIconDiv = document.getElementById('dossier-icon');
+        const menuContainer = document.getElementById('menu-container');
+        const menuLinks = document.querySelectorAll('.menu-link');
 
         let isDark = false;
 
-        themeToggle.addEventListener('click', () => {
-            isDark = !isDark;
-            if (isDark) {
+        function applyTheme(isDarkTheme) {
+            if (isDarkTheme) {
                 body.style.backgroundColor = '#1c1917';
-                body.style.color = '#d6d3d1'; /* New, slightly darker color */
+                body.style.color = '#d6d3d1'; 
                 mainContentBox.style.backgroundColor = '#292524';
                 dossierPanelDiv.style.backgroundColor = '#292524';
+                menuContainer.querySelector('div').style.backgroundColor = '#292524'; /* New: Menu background */
                 dossierIconDiv.style.backgroundColor = '#44403c';
                 dossierIconDiv.style.color = '#a8a29e';
                 themeToggle.style.backgroundColor = '#57534e';
                 themeToggle.style.color = '#a8a29e';
+                menuToggle.style.backgroundColor = '#57534e'; /* New: Menu Toggle */
+                menuToggle.style.color = '#a8a29e'; /* New: Menu Toggle */
                 themeIcon.textContent = '☀️';
             } else {
                 body.style.backgroundColor = '#f5f5f4';
                 body.style.color = '#292524';
                 mainContentBox.style.backgroundColor = '#ffffff';
                 dossierPanelDiv.style.backgroundColor = '#ffffff';
+                menuContainer.querySelector('div').style.backgroundColor = '#ffffff'; /* New: Menu background */
                 dossierIconDiv.style.backgroundColor = '#e7e5e4';
                 dossierIconDiv.style.color = '#44403c';
                 themeToggle.style.backgroundColor = '#e7e5e4';
                 themeToggle.style.color = '#44403c';
+                menuToggle.style.backgroundColor = '#e7e5e4'; /* New: Menu Toggle */
+                menuToggle.style.color = '#44403c'; /* New: Menu Toggle */
                 themeIcon.textContent = '🌙';
             }
+        }
+        
+        themeToggle.addEventListener('click', () => {
+            isDark = !isDark;
+            applyTheme(isDark);
+        });
+
+        /* --- Menu Toggle Logic --- */
+        const menuToggle = document.getElementById('menu-toggle');
+        const menuIcon = document.getElementById('menu-icon');
+        const mainStoryView = document.getElementById('main-story-view');
+        let isMenuOpen = false;
+
+        function showView(viewName) {
+            if (viewName === 'story') {
+                mainStoryView.classList.remove('hidden');
+                menuContainer.classList.add('hidden');
+                menuIcon.textContent = '☰';
+                document.title = 'A Meeting of Assassins';
+                isMenuOpen = false;
+            } else if (viewName === 'menu') {
+                mainStoryView.classList.add('hidden');
+                menuContainer.classList.remove('hidden');
+                menuIcon.textContent = '✖';
+                document.title = 'Main Menu';
+                isMenuOpen = true;
+            }
+            // Future logic for 'settings' view goes here
+        }
+
+        menuToggle.addEventListener('click', () => {
+            if (isMenuOpen) {
+                showView('story'); // Toggle back to story
+            } else {
+                showView('menu'); // Toggle to menu
+            }
+        });
+
+        menuLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                const view = link.getAttribute('data-view');
+                if (view === 'story') {
+                    showView('story');
+                } else if (view === 'settings') {
+                    // Placeholder logic for settings - could open a modal or new view
+                    alert('Settings menu not implemented yet!'); 
+                }
+            });
         });
     </script>
 </body>
